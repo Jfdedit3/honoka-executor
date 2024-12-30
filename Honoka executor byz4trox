@@ -1,99 +1,222 @@
-local screenGui = Instance.new("ScreenGui")
-local frame = Instance.new("Frame")
-local uiCorner = Instance.new("UICorner")
-local imageLabel = Instance.new("ImageLabel") -- Création de l'ImageLabel
-local textLabel = Instance.new("TextLabel") -- Création du TextLabel
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
 
--- Configuration de ScreenGui
-screenGui.Name = "RoundedGui"
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+-- Constants
+local CONSTANTS = {
+    COLORS = {
+        PRIMARY = Color3.fromRGB(30, 144, 255),
+        TEXT = Color3.fromRGB(255, 255, 255),
+        SHADOW = Color3.fromRGB(0, 0, 0)
+    },
+    TWEEN_INFO = {
+        INTRO = TweenInfo.new(1.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),
+        BOUNCE = TweenInfo.new(0.8, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out),
+        FADE = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    },
+    ANIMATION_DELAY = 0.3
+}
 
--- Configuration du Frame (la boîte)
-frame.Parent = screenGui
-frame.BackgroundColor3 = Color3.fromRGB(30, 144, 255) -- Bleu
-frame.Position = UDim2.new(0.5, -150, 1, 0) -- Commence hors de l'écran (en bas)
-frame.Size = UDim2.new(0, 300, 0, 200) -- Taille initiale plus grande pour accueillir image et texte
-frame.BackgroundTransparency = 1 -- Commence complètement transparent
+-- Utility functions
+local Utils = {}
 
--- Configuration du UICorner (coins arrondis)
-uiCorner.CornerRadius = UDim.new(0, 20) -- Rayon des coins
-uiCorner.Parent = frame
-
--- Configuration de l'ImageLabel (image à côté du texte)
-imageLabel.Parent = frame
-imageLabel.Size = UDim2.new(0, 100, 0, 100) -- Taille initiale de l'image
-imageLabel.Position = UDim2.new(0.5, -50, 0.5, -100) -- Position de l'image, haut collé au centre
-imageLabel.AnchorPoint = Vector2.new(0.5, 0) -- Ancre le haut de l'image au centre du cadre
-imageLabel.BackgroundTransparency = 1 -- Transparence du fond de l'image
-imageLabel.Image = "rbxassetid://106909593768778" -- ID de l'image
-imageLabel.ImageTransparency = 1 -- Commence complètement transparent
-
--- Configuration du TextLabel (texte en dessous de l'image)
-textLabel.Parent = frame
-textLabel.Size = UDim2.new(0, 200, 0, 50) -- Taille du texte
-textLabel.Position = UDim2.new(0.5, -100, 0.75, 0) -- Position du texte sous l'image
-textLabel.BackgroundTransparency = 1 -- Transparence du fond
-textLabel.Text = "Welcome To Honoka!!" -- Texte à afficher
-textLabel.Font = Enum.Font.GothamBold -- Police du texte
-textLabel.TextSize = 24 -- Taille du texte
-textLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Couleur rouge personnalisée pour le texte
-textLabel.TextScaled = true -- Ajuste automatiquement la taille du texte
-textLabel.TextTransparency = 1 -- Commence complètement transparent
-
--- Fonction pour animer l'introduction
-local function animateIntro()
-    -- Animation de position (glissement vers le centre)
-    frame:TweenPosition(UDim2.new(0.5, -150, 0.5, -100), "Out", "Quad", 2, true)
-
-    -- Animation de transparence (effet fondu pour le cadre)
-    local tweenService = game:GetService("TweenService")
-    local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-    local frameTransparencyTween = tweenService:Create(frame, tweenInfo, {BackgroundTransparency = 0})
-    frameTransparencyTween:Play()
-
-    -- Animation de taille (agrandissement du cadre)
-    frame:TweenSize(UDim2.new(0, 300, 0, 200), "Out", "Quad", 2, true)
-
-    -- Animation de taille pour l'image (agrandissement en diagonale)
-    local imageSizeTween = tweenService:Create(imageLabel, tweenInfo, {Size = UDim2.new(0, 150, 0, 150)})
-    imageSizeTween:Play()
-
-    -- Animation de transparence (effet fondu pour l'image)
-    local imageTransparencyTween = tweenService:Create(imageLabel, tweenInfo, {ImageTransparency = 0})
-    imageTransparencyTween:Play()
-
-    -- Animation de transparence (effet fondu pour le texte)
-    local textTransparencyTween = tweenService:Create(textLabel, tweenInfo, {TextTransparency = 0})
-    textTransparencyTween:Play()
-
-    -- Attendre que les animations soient terminées (2 secondes pour les animations)
-    wait(2)
-
-    -- Réduire la taille de l'image à sa taille finale
-    imageLabel:TweenSize(UDim2.new(0, 100, 0, 100), "Out", "Quad", 1, true)
+function Utils.createInstance(className, properties)
+    local instance = Instance.new(className)
+    for property, value in pairs(properties) do
+        instance[property] = value
+    end
+    return instance
 end
 
--- Fonction pour exécuter le script externe et détruire le GUI
-local function executeScriptAndDestroyGui()
-    -- Exécuter le script externe
+function Utils.createTween(instance, tweenInfo, properties)
+    return TweenService:Create(instance, tweenInfo, properties)
+end
+
+-- GUI Component Creator
+local GuiCreator = {}
+
+function GuiCreator.createMainGui()
+    local screenGui = Utils.createInstance("ScreenGui", {
+        Name = "EnhancedRoundedGui",
+        ResetOnSpawn = false,
+        Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+    })
+
+    return screenGui
+end
+
+function GuiCreator.createMainFrame(parent)
+    local mainFrame = Utils.createInstance("Frame", {
+        Name = "MainFrame",
+        Parent = parent,
+        BackgroundColor3 = CONSTANTS.COLORS.PRIMARY,
+        Position = UDim2.new(0.5, -175, 1.2, 0),
+        Size = UDim2.new(0, 350, 0, 250),
+        BackgroundTransparency = 1
+    })
+
+    -- Add shadow effect
+    local shadow = Utils.createInstance("ImageLabel", {
+        Name = "Shadow",
+        Parent = mainFrame,
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://1316045217",
+        ImageColor3 = CONSTANTS.COLORS.SHADOW,
+        ImageTransparency = 1,
+        Position = UDim2.new(0, -15, 0, -15),
+        Size = UDim2.new(1, 30, 1, 30),
+        ZIndex = 0
+    })
+
+    Utils.createInstance("UICorner", {
+        Parent = mainFrame,
+        CornerRadius = UDim.new(0, 25)
+    })
+
+    return mainFrame
+end
+
+function GuiCreator.createLogo(parent)
+    local logoContainer = Utils.createInstance("Frame", {
+        Name = "LogoContainer",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.5, -75, 0.2, 0),
+        Size = UDim2.new(0, 150, 0, 150),
+        AnchorPoint = Vector2.new(0.5, 0)
+    })
+
+    local logo = Utils.createInstance("ImageLabel", {
+        Name = "Logo",
+        Parent = logoContainer,
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://106909593768778",
+        ImageTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0)
+    })
+
+    return logoContainer
+end
+
+function GuiCreator.createText(parent)
+    local textLabel = Utils.createInstance("TextLabel", {
+        Name = "WelcomeText",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.5, 0, 0.75, 0),
+        Size = UDim2.new(0.8, 0, 0, 40),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Font = Enum.Font.GothamBold,
+        Text = "Welcome To Honoka!!",
+        TextColor3 = CONSTANTS.COLORS.TEXT,
+        TextSize = 28,
+        TextTransparency = 1
+    })
+
+    -- Add text stroke for better visibility
+    local textStroke = Utils.createInstance("UIStroke", {
+        Parent = textLabel,
+        Color = CONSTANTS.COLORS.SHADOW,
+        Thickness = 2,
+        Transparency = 1
+    })
+
+    return textLabel
+end
+
+-- Animation Controller
+local AnimationController = {}
+
+function AnimationController.playIntroAnimation(gui)
+    local mainFrame = gui.MainFrame
+    local logo = mainFrame.LogoContainer.Logo
+    local text = mainFrame.WelcomeText
+    local shadow = mainFrame.Shadow
+    local textStroke = text.UIStroke
+
+    -- Create all tweens
+    local framePosTween = Utils.createTween(mainFrame, CONSTANTS.TWEEN_INFO.BOUNCE, {
+        Position = UDim2.new(0.5, -175, 0.5, -125)
+    })
+
+    local frameFadeTween = Utils.createTween(mainFrame, CONSTANTS.TWEEN_INFO.INTRO, {
+        BackgroundTransparency = 0
+    })
+
+    local logoTween = Utils.createTween(logo, CONSTANTS.TWEEN_INFO.INTRO, {
+        ImageTransparency = 0
+    })
+
+    local textTween = Utils.createTween(text, CONSTANTS.TWEEN_INFO.INTRO, {
+        TextTransparency = 0
+    })
+
+    local shadowTween = Utils.createTween(shadow, CONSTANTS.TWEEN_INFO.INTRO, {
+        ImageTransparency = 0.5
+    })
+
+    local strokeTween = Utils.createTween(textStroke, CONSTANTS.TWEEN_INFO.INTRO, {
+        Transparency = 0
+    })
+
+    -- Play animations in sequence
+    framePosTween:Play()
+    wait(CONSTANTS.ANIMATION_DELAY)
+    frameFadeTween:Play()
+    shadowTween:Play()
+    wait(CONSTANTS.ANIMATION_DELAY)
+    logoTween:Play()
+    wait(CONSTANTS.ANIMATION_DELAY)
+    textTween:Play()
+    strokeTween:Play()
+
+    return framePosTween.Completed
+end
+
+function AnimationController.playOutroAnimation(gui)
+    local mainFrame = gui.MainFrame
+    local outroTween = Utils.createTween(mainFrame, CONSTANTS.TWEEN_INFO.FADE, {
+        BackgroundTransparency = 1
+    })
+    outroTween:Play()
+    outroTween.Completed:Wait()
+end
+
+-- Script Executor
+local ScriptExecutor = {}
+
+function ScriptExecutor.executeExternalScript()
     local success, errorMessage = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Jfdedit3/New-hub/main/nameless%20exec.lua"))()
     end)
+    return success, errorMessage
+end
 
-    -- Si l'exécution réussit, on détruit le GUI après que l'animation du texte soit terminée
+-- Main execution
+local function main()
+    local gui = GuiCreator.createMainGui()
+    local mainFrame = GuiCreator.createMainFrame(gui)
+    GuiCreator.createLogo(mainFrame)
+    GuiCreator.createText(mainFrame)
+
+    -- Play intro animation and wait for completion
+    AnimationController.playIntroAnimation(gui)
+    wait(1.5)
+
+    -- Execute external script
+    local success, errorMessage = ScriptExecutor.executeExternalScript()
+    
     if success then
-        wait(1) -- Ajouter un petit délai supplémentaire pour être sûr que tout est visible
-        screenGui:Destroy()
-        print("GUI détruit après l'exécution du script.")
+        -- Play outro animation and destroy GUI
+        AnimationController.playOutroAnimation(gui)
+        gui:Destroy()
+        print("Script executed successfully and GUI destroyed.")
     else
-        warn("Erreur lors de l'exécution du script : " .. errorMessage)
+        warn("Error executing script:", errorMessage)
+        -- Keep GUI visible for error feedback
+        mainFrame.WelcomeText.Text = "Error occurred. Check console."
+        wait(3)
+        gui:Destroy()
     end
 end
 
--- Lance l'animation après un délai
-wait(1)
-animateIntro()
-
--- Appel de la fonction pour exécuter le script et détruire le GUI
-executeScriptAndDestroyGui()
+main()
